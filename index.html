@@ -1,0 +1,38 @@
+cat > web/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/Aniversary/">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Kỷ niệm 6 tháng yêu nhau">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="6 Tháng Bên Nhau">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <title>6 Tháng Bên Nhau ❤️</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+</head>
+<body>
+<script>
+  const serviceWorkerVersion = "2048245853";
+</script>
+<script src="flutter.js" defer></script>
+<script>
+  window.addEventListener('load', function(ev) {
+    _flutter.loader.loadEntrypoint({
+      serviceWorker: {
+        serviceWorkerVersion: "2048245853",
+      },
+      onEntrypointLoaded: function(engineInitializer) {
+        engineInitializer.initializeEngine().then(function(appRunner) {
+          appRunner.runApp();
+        });
+      }
+    });
+  });
+</script>
+</body>
+</html>
+EOF
