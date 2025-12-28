@@ -22,4 +22,4 @@ flutter:
   assets:
     - assets/images/
     - assets/captions.json
-  #  - assets/music.mp3
+    - assets/music.mp3

@@ -1,6 +1,4 @@
-// ============================================
-// FILE: lib/main.dart
-// ============================================
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
@@ -28,9 +26,6 @@ class AnniversaryApp extends StatelessWidget {
   }
 }
 
-// ============================================
-// WISH INPUT SCREEN
-// ============================================
 class WishInputScreen extends StatefulWidget {
   const WishInputScreen({super.key});
 
@@ -87,7 +82,6 @@ class _WishInputScreenState extends State<WishInputScreen>
         ),
         child: Stack(
           children: [
-            // Floating hearts background
             ...List.generate(20, (index) {
               return AnimatedBuilder(
                 animation: _animationController,
@@ -108,7 +102,6 @@ class _WishInputScreenState extends State<WishInputScreen>
                 },
               );
             }),
-            // Main content
             Center(
               child: SingleChildScrollView(
                 child: Padding(
@@ -233,12 +226,8 @@ class _WishInputScreenState extends State<WishInputScreen>
   }
 }
 
-// ============================================
-// MAIN SLIDE SCREEN
-// ============================================
 class MainSlideScreen extends StatefulWidget {
   final String wish;
-
   const MainSlideScreen({super.key, required this.wish});
 
   @override
@@ -254,9 +243,11 @@ class _MainSlideScreenState extends State<MainSlideScreen>
   late AnimationController _slideAnimationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  int _currentAnimationType = 0;
+
+  // Audio player
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isMusicPlaying = false;
-  int _currentAnimationType = 0;
 
   @override
   void initState() {
@@ -284,29 +275,58 @@ class _MainSlideScreenState extends State<MainSlideScreen>
     );
 
     _loadAssets();
-    //_playMusic();
+    _playMusic();
+  }
+
+  Future<void> _playMusic() async {
+    try {
+      await _audioPlayer.play(AssetSource('music.mp3'));
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      setState(() {
+        _isMusicPlaying = true;
+      });
+    } catch (e) {
+      print('Không thể phát nhạc: $e');
+    }
+  }
+
+  void _toggleMusic() {
+    if (_isMusicPlaying) {
+      _audioPlayer.pause();
+    } else {
+      _audioPlayer.resume();
+    }
+    setState(() {
+      _isMusicPlaying = !_isMusicPlaying;
+    });
   }
 
   Future<void> _loadAssets() async {
-    // Load captions
-    final captionsJson =
-        await rootBundle.loadString('assets/captions.json');
+    final captionsJson = await rootBundle.loadString('assets/captions.json');
     _captions = Map<String, String>.from(json.decode(captionsJson));
 
-    // Load image list
-    final manifestJson =
-        await rootBundle.loadString('AssetManifest.json');
+    final manifestJson = await rootBundle.loadString('AssetManifest.json');
     final Map<String, dynamic> manifest = json.decode(manifestJson);
-    
-    final imagePaths = manifest.keys
-        .where((key) => key.startsWith('assets/images/') && 
-               (key.endsWith('.jpg') || 
-                key.endsWith('.jpeg') || 
-                key.endsWith('.png') || 
-                key.endsWith('.webp')))
-        .toList();
 
-    // Create slides
+    final imagePaths = manifest.keys
+        .where((key) => key.startsWith('assets/images/') &&
+        (key.endsWith('.jpg') ||
+            key.endsWith('.jpeg') ||
+            key.endsWith('.png') ||
+            key.endsWith('.webp')))
+        .toList()
+      ..sort((a, b) {
+        // Lấy tên file không có đường dẫn
+        final fileNameA = a.split('/').last;
+        final fileNameB = b.split('/').last;
+
+        // Tách số từ tên file (ví dụ: photo1.jpg -> 1)
+        final numA = int.tryParse(fileNameA.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+        final numB = int.tryParse(fileNameB.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+
+        return numA.compareTo(numB);
+      });
+
     _slides = [
       SlideData(
         title: "6 Tháng Bên Nhau",
@@ -334,8 +354,7 @@ class _MainSlideScreenState extends State<MainSlideScreen>
     _slides.add(SlideData(
       title: "Lời Nhắn Cuối",
       subtitle: "Dành tặng Đỗ Minh Hằng",
-      message:
-          "Cảm ơn em đã đến bên anh. Hẹn những ngày tháng tiếp theo sẽ còn nhiều kỷ niệm đẹp hơn nữa! 💕",
+      message: "Cảm ơn em đã đến bên anh. Hẹn những ngày tháng tiếp theo sẽ còn nhiều kỷ niệm đẹp hơn nữa! 💕",
       gradient: const [Color(0xFFEF4444), Color(0xFFEC4899)],
       type: SlideType.outro,
     ));
@@ -366,7 +385,6 @@ class _MainSlideScreenState extends State<MainSlideScreen>
 
   void _nextSlide() {
     if (_slides.isEmpty) return;
-    
     _slideAnimationController.reverse().then((_) {
       setState(() {
         _currentSlide = (_currentSlide + 1) % _slides.length;
@@ -379,7 +397,6 @@ class _MainSlideScreenState extends State<MainSlideScreen>
 
   void _goToSlide(int index) {
     if (index == _currentSlide || _slides.isEmpty) return;
-    
     _slideAnimationController.reverse().then((_) {
       setState(() {
         _currentSlide = index;
@@ -392,60 +409,22 @@ class _MainSlideScreenState extends State<MainSlideScreen>
 
   void _updateAnimation() {
     switch (_currentAnimationType) {
-      case 0: // Fade
-        _slideAnimation = Tween<Offset>(
-          begin: Offset.zero,
-          end: Offset.zero,
-        ).animate(_slideAnimationController);
+      case 0:
+        _slideAnimation = Tween<Offset>(begin: Offset.zero, end: Offset.zero).animate(_slideAnimationController);
         break;
-      case 1: // Slide from right
-        _slideAnimation = Tween<Offset>(
-          begin: const Offset(1.0, 0.0),
-          end: Offset.zero,
-        ).animate(_slideAnimationController);
+      case 1:
+        _slideAnimation = Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero).animate(_slideAnimationController);
         break;
-      case 2: // Slide from left
-        _slideAnimation = Tween<Offset>(
-          begin: const Offset(-1.0, 0.0),
-          end: Offset.zero,
-        ).animate(_slideAnimationController);
+      case 2:
+        _slideAnimation = Tween<Offset>(begin: const Offset(-1.0, 0.0), end: Offset.zero).animate(_slideAnimationController);
         break;
-      case 3: // Slide from top
-        _slideAnimation = Tween<Offset>(
-          begin: const Offset(0.0, -1.0),
-          end: Offset.zero,
-        ).animate(_slideAnimationController);
+      case 3:
+        _slideAnimation = Tween<Offset>(begin: const Offset(0.0, -1.0), end: Offset.zero).animate(_slideAnimationController);
         break;
-      case 4: // Slide from bottom
-        _slideAnimation = Tween<Offset>(
-          begin: const Offset(0.0, 1.0),
-          end: Offset.zero,
-        ).animate(_slideAnimationController);
+      case 4:
+        _slideAnimation = Tween<Offset>(begin: const Offset(0.0, 1.0), end: Offset.zero).animate(_slideAnimationController);
         break;
     }
-  }
-
-  Future<void> _playMusic() async {
-    try {
-      await _audioPlayer.play(AssetSource('music.mp3'));
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      setState(() {
-        _isMusicPlaying = true;
-      });
-    } catch (e) {
-      print('Error playing music: $e');
-    }
-  }
-
-  void _toggleMusic() {
-    if (_isMusicPlaying) {
-      _audioPlayer.pause();
-    } else {
-      _audioPlayer.resume();
-    }
-    setState(() {
-      _isMusicPlaying = !_isMusicPlaying;
-    });
   }
 
   @override
@@ -474,32 +453,22 @@ class _MainSlideScreenState extends State<MainSlideScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF111827),
-              Color(0xFF581C87),
-              Color(0xFF111827),
-            ],
+            colors: [Color(0xFF111827), Color(0xFF581C87), Color(0xFF111827)],
           ),
         ),
         child: Stack(
           children: [
-            // Floating hearts
             ...List.generate(15, (index) {
               return Positioned(
                 left: (index * 97) % MediaQuery.of(context).size.width,
                 top: (index * 73) % MediaQuery.of(context).size.height,
-                child: const Icon(
-                  Icons.favorite,
-                  color: Color(0x33EC4899),
-                  size: 40,
-                ),
+                child: const Icon(Icons.favorite, color: Color(0x33EC4899), size: 40),
               );
             }),
-            // Main content
             SafeArea(
               child: Column(
                 children: [
-                  // Music button
+                  // Nút điều khiển nhạc
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Row(
@@ -508,17 +477,15 @@ class _MainSlideScreenState extends State<MainSlideScreen>
                         FloatingActionButton(
                           onPressed: _toggleMusic,
                           backgroundColor: const Color(0xFFEC4899),
+                          mini: true,
                           child: Icon(
-                            _isMusicPlaying
-                                ? Icons.music_note
-                                : Icons.music_off,
+                            _isMusicPlaying ? Icons.music_note : Icons.music_off,
                             color: Colors.white,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  // Slide content
                   Expanded(
                     child: Center(
                       child: Padding(
@@ -550,19 +517,16 @@ class _MainSlideScreenState extends State<MainSlideScreen>
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Icon
                                       Icon(
                                         currentSlideData.type == SlideType.intro
                                             ? Icons.calendar_today
-                                            : currentSlideData.type ==
-                                                    SlideType.outro
-                                                ? Icons.favorite
-                                                : Icons.auto_awesome,
+                                            : currentSlideData.type == SlideType.outro
+                                            ? Icons.favorite
+                                            : Icons.auto_awesome,
                                         size: 64,
                                         color: Colors.white,
                                       ),
                                       const SizedBox(height: 24),
-                                      // Title
                                       Text(
                                         currentSlideData.title,
                                         style: const TextStyle(
@@ -573,7 +537,6 @@ class _MainSlideScreenState extends State<MainSlideScreen>
                                         textAlign: TextAlign.center,
                                       ),
                                       const SizedBox(height: 16),
-                                      // Subtitle
                                       Text(
                                         currentSlideData.subtitle,
                                         style: const TextStyle(
@@ -583,16 +546,11 @@ class _MainSlideScreenState extends State<MainSlideScreen>
                                         ),
                                         textAlign: TextAlign.center,
                                       ),
-                                      // Image
-                                      if (currentSlideData.type ==
-                                              SlideType.image &&
-                                          currentSlideData.imagePath != null)
+                                      if (currentSlideData.type == SlideType.image && currentSlideData.imagePath != null)
                                         Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 32),
+                                          padding: const EdgeInsets.symmetric(vertical: 32),
                                           child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(16),
                                             child: Image.asset(
                                               currentSlideData.imagePath!,
                                               height: 320,
@@ -600,11 +558,9 @@ class _MainSlideScreenState extends State<MainSlideScreen>
                                             ),
                                           ),
                                         ),
-                                      // Message
                                       if (currentSlideData.message.isNotEmpty)
                                         Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 24),
+                                          padding: const EdgeInsets.only(top: 24),
                                           child: Text(
                                             currentSlideData.message,
                                             style: const TextStyle(
@@ -625,7 +581,6 @@ class _MainSlideScreenState extends State<MainSlideScreen>
                       ),
                     ),
                   ),
-                  // Navigation dots
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Row(
@@ -649,7 +604,6 @@ class _MainSlideScreenState extends State<MainSlideScreen>
                       }),
                     ),
                   ),
-                  // Progress bar
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     child: Container(
@@ -671,7 +625,6 @@ class _MainSlideScreenState extends State<MainSlideScreen>
                       ),
                     ),
                   ),
-                  // Image count
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: Text(
@@ -692,9 +645,6 @@ class _MainSlideScreenState extends State<MainSlideScreen>
   }
 }
 
-// ============================================
-// MODELS
-// ============================================
 enum SlideType { intro, image, outro }
 
 class SlideData {
